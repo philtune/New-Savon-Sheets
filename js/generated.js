@@ -1,6 +1,4 @@
-import {Calculr} from './Calculr/Calculr.js';
-
-let generated_calc = new Calculr({
+export const generated_config = {
 	fields: {
 		'settings:object': {
 			'cure_days': {
@@ -15,7 +13,9 @@ let generated_calc = new Calculr({
 				helper.value('made_at').addDays(helper.value('settings.cure_days'))
 		},
 		'oils_list:array': {
-			on_delete: helper => null,
+			on_delete: helper => {
+				return null
+			},
 			fields: {
 				'naoh_sap': {
 					input: (val, helper) => {
@@ -62,9 +62,6 @@ let generated_calc = new Calculr({
 		'*naoh_weight': {
 			calculated: helper =>
 				helper.sum('oils_list', 'naoh_weight')
-
 		}
 	}
-});
-
-export { generated_calc };
+};

@@ -1,7 +1,7 @@
-import {Lib} from './library.js';
+import {unit_tests} from './library.js';
 
 export function runTests(calc) {
-	Lib.unit_tests(calc, [
+	unit_tests(calc, [
 		[test => test('settings.cure_days').input(6*7),
 			assert =>
 				assert('settings.cure_days').value === 6*7 &&
@@ -56,6 +56,8 @@ export function runTests(calc) {
 			assert =>
 				assert('oils_list[0].naoh_sap').value === 0.134 &&
 				assert('oils_list[0].naoh_weight').value === 0.134 * 20 &&
-				assert('naoh_weight').value === 0.134 * 20]
+				assert('naoh_weight').value === 0.134 * 20],
+		[test => test('oils_list').delete(0),
+			assert => true]
 	], true);
 }

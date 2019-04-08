@@ -1,6 +1,7 @@
 import {getHelper} from "./getHelper.js";
 
-export function makeInputField(field_calc, callbacks, registry) {
+export function makeInputField(field_calc, field_config, registry) {
+	field_calc.type = field_config.type;
 	switch ( field_calc.type ) {
 		case 'date':
 			field_calc.value = new Date();
@@ -15,7 +16,7 @@ export function makeInputField(field_calc, callbacks, registry) {
 
 	const helper = getHelper(field_calc, registry);
 
-	if ( callbacks.input === null || !!callbacks.input ) {
+	if ( field_config.input === undefined || !!field_config.input ) {
 		field_calc.input = function(val) {
 			switch ( field_calc.type ) {
 				case 'date':
@@ -29,16 +30,16 @@ export function makeInputField(field_calc, callbacks, registry) {
 					break;
 			}
 			this.value = val;
-			if ( typeof callbacks.input === 'function' ) {
-				callbacks.input(val, helper);
+			if ( typeof field_config.input === 'function' ) {
+				field_config.input(val, helper);
 			}
 			return this;
 		};
 	}
 
-	if ( typeof callbacks.calculated === 'function' ) {
+	if ( typeof field_config.calculated === 'function' ) {
 		field_calc.calculate = function(){
-			let result = callbacks.calculated(helper);
+			let result = field_config.calculated(helper);
 			field_calc.value = result;
 			return result;
 		};

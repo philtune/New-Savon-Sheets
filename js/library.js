@@ -46,57 +46,26 @@ export const Lib = {
 		elem.innerHTML = '';
 		elem.insertAdjacentHTML('afterbegin', html);
 	},
-	testParity: function(tests, repress_error) {
-		const parity_elem = document.querySelector('#parity');
-		repress_error = repress_error || false;
-		const runTest = (test) => {
-			let
-				first_obj_result,
-				second_obj_result,
-				parity
-			;
-			test[0].call(this, generated_calc);
-			second_obj_result = Lib.jsonify(generated_calc.fields);
-			Lib.insertHTML('#output2', Lib.colorCode(second_obj_result));
-			console.log(test[1]());
-			if ( !repress_error ) {
-				test[0].call(this, manual_calc);
-				first_obj_result = Lib.jsonify(manual_calc);
-				Lib.insertHTML('#output', Lib.colorCode(first_obj_result));
-				parity = first_obj_result === second_obj_result;
-				parity_elem.innerHTML = 'Parity: ' + parity;
-				parity_elem.classList = parity;
-				if ( first_obj_result !== second_obj_result ) {
-					throw new Error('Parity error. Check the output.');
-				}
-			}
-		};
-		Lib.each(tests, function(i, test) {
-			runTest(test);
-		});
-		if ( !repress_error ) {
-			console.log('Tests complete!');
-		}
-	},
-	unit_tests: (calc, tests, log) => {
-		const runTest = (test) => {
-			console.log('%c '+test[0], 'background: #222; color: #bada55');
-			// console.log('Testing:', test[0]);
-			test[0](calc.search);
-			Lib.insertHTML('#output2', Lib.colorCode(Lib.jsonify(calc.fields)));
-			let passed = test[1](calc.search);
-			if ( passed ) {
-				if ( log ) {
-					console.log('%c Passed:', 'background: lightgreen', test[1]);
-				}
-			} else {
-				console.error('%c Failed Assertion:', 'background: red; color: white', test[1]);
-				throw new Error();
-			}
-		};
-		Lib.each(tests, (i, test) => runTest(test));
-	}
 };
+
+export function unit_tests(calc, tests, log) {
+	const runTest = (test) => {
+		console.log('%c '+test[0], 'background: #222; color: #bada55');
+		// console.log('Testing:', test[0]);
+		test[0](calc.search);
+		Lib.insertHTML('#output2', Lib.colorCode(Lib.jsonify(calc.fields)));
+		let passed = test[1](calc.search);
+		if ( passed ) {
+			if ( log ) {
+				console.log('%c Passed:', 'background: lightgreen', test[1]);
+			}
+		} else {
+			console.error('%c Failed Assertion:', 'background: red; color: white', test[1]);
+			throw new Error();
+		}
+	};
+	Lib.each(tests, (i, test) => runTest(test));
+}
 
 Date.prototype.addDays = function(days) {
 	const date = new Date(this.valueOf());
