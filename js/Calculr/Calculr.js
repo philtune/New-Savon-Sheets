@@ -1,23 +1,21 @@
 import {buildFields} from "./buildFields.js";
 
 // input "config", output "calc"
-export function Calculr(config) {
+export class Calculr {
 
-	// Build Calculr instance
-	const Calculr = this;
+	data = {};
+	registry = {};
+	field_set = {};
 
-	// index all fields in a registry
-	window.registry = this.registry = {};
-	// return any indexed field
-	this.search = id => {
-		if ( !Calculr.registry.hasOwnProperty(id) ) {
+	constructor(config) {
+		this.field_set = buildFields(config.fields || {}, null, this.registry);
+	}
+
+	search = id => {
+		if ( !this.registry.hasOwnProperty(id) ) {
 			return null;
 		}
-		return Calculr.registry[id]
-	};
-
-
-	// Build the calculator fields.
-	this.fields = buildFields(config.fields || {}, null, this.registry);
+		return this.registry[id]
+	}
 
 }

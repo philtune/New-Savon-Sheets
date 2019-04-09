@@ -11,7 +11,7 @@ export function buildArrayCalc(array_calc, array_config, buildFields, registry) 
 				type: 'object',
 				parent: array_calc
 			};
-			collection_item.fields = buildFields(array_config.fields, collection_item.id, registry);
+			collection_item.field_set = buildFields(array_config.fields, collection_item.id, registry);
 			registry[collection_item.id] = collection_item;
 			this.collection.push(collection_item);
 			if ( array_config.hasOwnProperty('on_add') && typeof array_config.on_add === 'function' ) {
@@ -28,14 +28,18 @@ export function buildArrayCalc(array_calc, array_config, buildFields, registry) 
 		sum: function(key) {
 			let result = 0;
 			Lib.each(array_calc.collection, function(i, item) {
-				result += item.fields[key].value;
+				if ( typeof item === 'object' ) {
+					result += item.field_set[key].value;
+				}
 			});
 			return result;
 		},
 		array_calculate: function(key) {
 			let result = 0;
 			Lib.each(this.collection, function(i, item) {
-				result += item.fields[key].calculate();
+				if ( typeof item === 'object' ) {
+					result += item.field_set[key].calculate();
+				}
 			});
 			return result;
 		}

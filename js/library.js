@@ -53,7 +53,7 @@ export function unit_tests(calc, tests, log) {
 		console.log('%c '+test[0], 'background: #222; color: #bada55');
 		// console.log('Testing:', test[0]);
 		test[0](calc.search);
-		Lib.insertHTML('#output2', Lib.colorCode(Lib.jsonify(calc.fields)));
+		Lib.insertHTML('#output2', Lib.colorCode(Lib.jsonify(calc.field_set)));
 		let passed = test[1](calc.search);
 		if ( passed ) {
 			if ( log ) {

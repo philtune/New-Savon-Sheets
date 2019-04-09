@@ -23,7 +23,7 @@ export const buildFields = (parent_configs, prefix, registry) => {
 					id: field_id,
 					parent: field_set,
 					type: 'object',
-					fields: buildFields(field_config, field_id, registry)
+					field_set: buildFields(field_config, field_id, registry)
 				};
 				break;
 			case 'array':
