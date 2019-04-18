@@ -1,12 +1,11 @@
-import {Lib} from './library.js';
-import {generated_config} from './generated.js';
-import {runTests} from './tests.js';
-import {Calculr} from "./Calculr/Calculr.js";
+import {updateDOM} from './library.js';
+import {Recipe} from './Recipe/recipe.js';
+import {runTests} from './Recipe/tests.js';
 
-const generated_calc = new Calculr(generated_config);
-window.calc = generated_calc;
+window.calc = Recipe;
+window.updateDOM = updateDOM;
 
-Lib.insertHTML('#output2', Lib.colorCode(Lib.jsonify(generated_calc.field_set)));
+updateDOM();
 
-runTests(generated_calc);
+runTests(Recipe);
 
