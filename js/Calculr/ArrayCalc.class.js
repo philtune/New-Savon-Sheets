@@ -1,5 +1,5 @@
-import {getHelper} from "./getHelper.function.js";
 import {ObjectCalc} from "./ObjectCalc.class.js";
+import {Calculr} from "./Calculr.class.js";
 
 export class ArrayCalc {
 
@@ -10,19 +10,21 @@ export class ArrayCalc {
 	getSiblings = null;
 	type = 'array';
 
-	constructor(config) {
-		this.name = config.name;
-		this.key = config.parent_key + config.name;
-		this.getParent = _ => config.parent;
-		this.getSiblings = _ => config.parent.children;
-		this.getSibling = key => config.parent.children[key];
-		config.registry[this.key] = this;
-		this.getConfig = _ => config;
+	constructor(options) {
+		this.name = options.name;
+		this.key = options.parent_key + options.name;
+		this.getParent = () => options.parent;
+		this.getSiblings = () => options.parent.children;
+		this.getSibling = key => options.parent.children[key];
+		this.getConfig = () => options;
+		this.getLength = () => this.collection.length;
+		this.getRoot = () => options.root;
+		this.getRoot().registry[this.key] = this;
 	}
 
-	add = _ => {
+	add = () => {
 		const
-			index = this.collection.length,
+			index = this.getLength(),
 			field_id = this.key + '[' + index + ']',
 			item = new ObjectCalc({
 				name: index,
@@ -32,9 +34,10 @@ export class ArrayCalc {
 				parent_type: 'array',
 				registry: this.getConfig().registry,
 				children_configs: this.getConfig().children_configs,
-				data_parent: this.getConfig().data_parent[this.name]
+				data_parent: this.getConfig().data_parent[this.name],
+				root: this.getRoot()
 			}),
-			helper = getHelper(item, this.getConfig().registry)
+			helper = Calculr.getHelper(item)
 		;
 
 		this.getConfig().registry[field_id] = item;
@@ -47,7 +50,7 @@ export class ArrayCalc {
 	};
 
 	delete = index => {
-		const helper = getHelper(this.collection[index], this.getConfig().registry);
+		const helper = Calculr.getHelper(this.collection[index]);
 		delete this.collection[index];
 		delete this.getConfig().data_parent[this.name][index];
 		if ( typeof this.getConfig().array_config.on_delete === 'function' ) {

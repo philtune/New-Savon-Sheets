@@ -1,6 +1,6 @@
 import {fieldSet} from "./fieldSet.function.js";
 
-export class ObjectCalc {
+export class ForeignCalc {
 
 	name;
 	key = '';

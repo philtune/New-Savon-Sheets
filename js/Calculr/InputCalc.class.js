@@ -1,5 +1,5 @@
-import {getHelper} from "./getHelper.function.js";
 import {round} from "../library.js";
+import {Calculr} from "./Calculr.class.js";
 
 function set(self, val) {
 	if ( typeof val === 'number' ) {
@@ -17,32 +17,36 @@ export class InputCalc {
 	type = null;
 	value;
 
-	constructor(config) {
-		this.name = config.name;
-		this.key = config.parent_key + config.name;
-		this.getParent = _ => config.parent;
-		this.getSibling = key => config.parent.children[key];
-		this.type = config.field_config.type;
-		config.registry[this.key] = this;
-		this.getConfig = _ => config;
-		if ( config.closest_array ) {
-			this.closest_array = config.closest_array;
+	constructor(options) {
+		this.name = options.name;
+		this.key = options.parent_key + options.name;
+		this.getParent = () => options.parent;
+		this.getSibling = key => options.parent.children[key];
+		this.type = options.field_config.type;
+		this.getConfig = () => options;
+		if ( options.closest_array ) {
+			this.closest_array = options.closest_array;
 		}
+		this.getRoot = () => options.root;
 
 		switch ( this.type ) {
 			case 'date':
-				set(this, 'default' in config.field_config ?
-					config.field_config.default : new Date());
+				set(this, 'default' in options.field_config ?
+					options.field_config.default : new Date());
 				break;
 			case 'string':
-				set(this, 'default' in config.field_config ?
-					config.field_config.default : '');
+				set(this, 'default' in options.field_config ?
+					options.field_config.default : '');
 				break;
 			default:
-				set(this, 'default' in config.field_config ?
-					config.field_config.default : 0);
+				set(this, 'default' in options.field_config ?
+					options.field_config.default : 0);
 				break;
 		}
+
+		this.getRoot().registry[this.key] = this;
+
+		this.getHelper = () => Calculr.getHelper(this);
 	}
 
 	input = val => {
@@ -60,18 +64,20 @@ export class InputCalc {
 			}
 			set(this, val);
 			if ( typeof this.getConfig().field_config.after_input === 'function' ) {
-				this.getConfig().field_config.after_input(getHelper(this, this.getConfig().registry));
+				this.getConfig().field_config.after_input(this.getHelper());
 			}
 		}
 		return this;
 	};
 
-	calculate = _ => {
+	calculate = () => {
 		let result = null;
 		if ( typeof this.getConfig().field_config.on_calculate === 'function' ) {
-			result = this.getConfig().field_config.on_calculate(getHelper(this, this.getConfig().registry));
+			result = this.getConfig().field_config.on_calculate(this.getHelper());
 		}
 		set(this, result);
 		return result;
 	};
+
+
 }

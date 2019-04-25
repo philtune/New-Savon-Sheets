@@ -2,7 +2,7 @@ import {ObjectCalc} from "./ObjectCalc.class.js";
 import {ArrayCalc} from "./ArrayCalc.class.js";
 import {InputCalc} from "./InputCalc.class.js";
 
-export const fieldSet = (config) => {
+export function fieldSet(config) {
 	config.data = config.data || {};
 	const children = {};
 	const parent_key =
@@ -16,53 +16,44 @@ export const fieldSet = (config) => {
 			static_input_indicator = name_config[1],
 			name = name_config[2],
 			type = name_config[3],
-			child_obj
+			child_obj,
+			child_config = {
+				name: name,
+				parent: config.parent,
+				parent_key: parent_key,
+				registry: config.registry,
+				data_parent: config.data,
+				closest_array: config.closest_array || null,
+				root: config.root
+			}
 		;
 
 		switch ( type ) {
 			case 'object':
 				config.data[name] = {};
-				child_obj = new ObjectCalc({
-					name: name,
-					parent: config.parent,
-					parent_key: parent_key,
-					parent_type: 'object',
-					children_configs: field_config,
-					registry: config.registry,
-					data_parent: config.data,
-					closest_array: config.closest_array || null
-				});
+				child_config.parent_type = 'object';
+				child_config.children_configs = field_config;
+				child_obj = new ObjectCalc(child_config);
 				break;
 			case 'array':
 				config.data[name] = [];
-				child_obj = new ArrayCalc({
-					name: name,
-					parent: config.parent,
-					parent_key: parent_key,
-					array_config: field_config,
-					children_configs: field_config.fields,
-					registry: config.registry,
-					data_parent: config.data,
-					closest_array: config.closest_array || null
-				});
+				child_config.array_config = field_config;
+				child_config.children_configs = field_config.fields;
+				child_obj = new ArrayCalc(child_config);
+				break;
+			case 'foreign':
+				child_obj = new ForeignCalc(child_config);
 				break;
 			default:
 				config.data[name] = null;
 				field_config.type = type || field_config.type || 'input';
-				child_obj = new InputCalc({
-					name: name,
-					parent: config.parent,
-					parent_key: parent_key,
-					field_config: field_config,
-					can_input: static_input_indicator === undefined,
-					registry: config.registry,
-					data_parent: config.data,
-					closest_array: config.closest_array || null
-				});
+				child_config.field_config = field_config;
+				child_config.can_input = static_input_indicator === undefined;
+				child_obj = new InputCalc(child_config);
 				break;
 		}
 
 		children[name] = child_obj;
 	});
 	return children;
-};
+}

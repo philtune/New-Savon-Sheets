@@ -1,11 +1,7 @@
-import {updateDOM} from './library.js';
-import {Recipe} from './Recipe/recipe.js';
-import {runTests} from './Recipe/tests.js';
+import {Recipe} from './Recipe/Recipe.class.js';
 
-window.calc = Recipe;
-window.updateDOM = updateDOM;
+const recipe = new Recipe();
 
-updateDOM();
+window.calc = recipe.calc;
 
-runTests(Recipe);
-
+recipe.runTests();

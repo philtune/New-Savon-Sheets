@@ -1,6 +1,5 @@
 import {fieldSet} from "./fieldSet.function.js";
-import {getHelper} from "../Calculr/getHelper.function.js";
-import {updateDOM} from "../library.js";
+import {getCaller, headless, headlessError, updateDOM} from "../library.js";
 
 export class Calculr {
 
@@ -15,27 +14,75 @@ export class Calculr {
 			parent: this,
 			parent_key: null,
 			registry: this.registry,
-			data: this.data
+			data: this.data,
+			root: this
 		});
 		this.methods = config.methods || {};
 	}
 
+
+	static getHelper(field_calc) {
+		const registry = field_calc.getRoot().registry;
+		const helper = {
+			search: key => {
+				if ( registry.hasOwnProperty(key) ) {
+					return registry[key];
+				}
+				return null;
+			},
+			self: field_calc,
+			getParent: () => field_calc.getParent(),
+			getSiblings: () => field_calc.getParent().children,
+			getSibling: key => field_calc.getParent().children[key],
+			value: key => helper.search(key).value,
+			sum: (array_key, key) => helper.search(array_key).sum(key),
+			closest_array: () => field_calc.closest_array,
+			calculate: (array_key, key) =>
+				( undefined !== key ) ?
+					helper.search(array_key).array_calculate(key) :
+					helper.search(array_key).calculate(),
+			invoke: (key) => {
+				if ( key in field_calc.getRoot().methods ) {
+					field_calc.getRoot().methods[key](helper);
+				}
+			}
+		};
+		return helper;
+	}
+
 	search = key => {
-		if ( !this.registry.hasOwnProperty(key) ) {
-			return null;
+		if ( this.registry.hasOwnProperty(key) ) {
+			return this.registry[key];
 		}
-		return this.registry[key]
+		return null;
 	};
 
-	runTests = cb => {
-		const run = cb => {
-			console.log('%c '+cb, 'background: #222; color: #bada55');
-			cb();
-			updateDOM();
+	runTests = tests_cb => {
+		const warn = [console.warn, headless][0];
+		const error = [console.error, headlessError][0];
+		const run = (input, val) => {
+			let
+				code,
+				input_calc
+			;
+			if ( typeof input === 'function' ) {
+				code = input;
+				input_calc = null;
+				input();
+			} else {
+				if ( typeof input === 'string' && val !== undefined ) {
+					input_calc = search(input);
+					search(input).input(val);
+					code = `${input} = ${val}`;
+				}
+			}
+			warn('%c run() @ '+getCaller()+' ', 'background: #222; color: #bada55', code);
+			updateDOM(this);
+			return input_calc;
 		};
-		const search = getHelper(this, this.registry).search;
+		const search = this.search;
 		const assert = (input, testVal) => {
-			let passed, code;
+			let passed = true, code;
 			if ( typeof input === 'function' ) {
 				code = input;
 				passed = input();
@@ -46,33 +93,14 @@ export class Calculr {
 				}
 			}
 			if ( passed ) {
-				console.log('%c '+code, 'background: lightgreen');
+				warn('%c Passed assert() @ '+getCaller()+' ', 'background: lightgreen', code);
 			} else {
-				console.error('%c Failed Assertion:', 'background: red; color: white', code);
-				throw new Error();
+				error('%c Failed assert() @ '+getCaller()+' ', 'background: red; color: white', code);
+				throw new Error('Testing Error');
 			}
 		};
-		cb(run, assert, search);
-	};
-
-	unit_tests = (tests, log) => {
-		const runTest = (key,test) => {
-			console.log('%c '+key+': '+test[0], 'background: #222; color: #bada55');
-			test[0](this.search);
-			updateDOM();
-			if ( test.length > 1 ) {
-				let passed = test[1](this.search);
-				if ( passed ) {
-					if ( log ) {
-						console.log('%c Passed:', 'background: lightgreen', test[1]);
-					}
-				} else {
-					console.error('%c Failed Assertion:', 'background: red; color: white', test[1]);
-					throw new Error();
-				}
-			}
-		};
-		Object.keys(tests).forEach((key) => runTest(key,tests[key]));
+		const getval = key => search(key).value;
+		tests_cb(run, assert, search, getval);
 	};
 
 }
