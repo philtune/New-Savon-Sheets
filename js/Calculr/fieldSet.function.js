@@ -1,57 +1,67 @@
 import {ObjectCalc} from "./ObjectCalc.class.js";
 import {ArrayCalc} from "./ArrayCalc.class.js";
 import {InputCalc} from "./InputCalc.class.js";
+import {ForeignCalc} from "./ForeignCalc.class.js";
 
-export function fieldSet(config) {
-	config.data = config.data || {};
+export function fieldSet(options) {
+	options.data = options.data || {};
 	const children = {};
 	const parent_key =
-		config.parent_key !== null ?
-			config.parent_key + '.' :
+		options.parent_key !== null ?
+			options.parent_key + '.' :
 			'';
-	Object.keys(config.children_configs).forEach(function(key) {
-		let field_config = config.children_configs[key];
+	Object.keys(options.children_configs).forEach(function(key) {
+		let field_config = options.children_configs[key];
 		let name_config = key.match(/(\*)?([^:]+):?(.*)?/);
 		let
 			static_input_indicator = name_config[1],
 			name = name_config[2],
 			type = name_config[3],
 			child_obj,
-			child_config = {
-				name: name,
-				parent: config.parent,
-				parent_key: parent_key,
-				registry: config.registry,
-				data_parent: config.data,
-				closest_array: config.closest_array || null,
-				root: config.root
+			child_options = {
+				registry_key: parent_key + name,
+				parent: options.parent,
+				registry: options.registry,
+				data_parent: options.data,
+				closest_array: options.closest_array || null,
+				root: options.root
 			}
 		;
 
 		switch ( type ) {
 			case 'object':
-				config.data[name] = {};
-				child_config.parent_type = 'object';
-				child_config.children_configs = field_config;
-				child_obj = new ObjectCalc(child_config);
+				child_options.children_configs = field_config;
+				child_options.data = options.data[name] = {};
+				child_obj = new ObjectCalc(child_options);
 				break;
 			case 'array':
-				config.data[name] = [];
-				child_config.array_config = field_config;
-				child_config.children_configs = field_config.fields;
-				child_obj = new ArrayCalc(child_config);
+				child_options.array_config = field_config;
+				child_options.children_configs = field_config.fields;
+				child_options.data = options.data[name] = [];
+				child_obj = new ArrayCalc(child_options);
 				break;
 			case 'foreign':
-				child_obj = new ForeignCalc(child_config);
+				child_obj = new ForeignCalc(child_options);
 				break;
 			default:
-				config.data[name] = null;
-				field_config.type = type || field_config.type || 'input';
-				child_config.field_config = field_config;
-				child_config.can_input = static_input_indicator === undefined;
-				child_obj = new InputCalc(child_config);
+				options.data[name] = null;
+				child_options.name = name;
+				child_options.input_config = field_config;
+				child_options.type = type || field_config.type || 'input';
+				child_obj = new InputCalc(child_options);
+				child_obj.can_input = static_input_indicator === undefined;
 				break;
 		}
+
+		child_obj = Object.assign(child_obj, {
+			name: name,
+			registry_key: parent_key + name,
+			getParent: () => options.parent,
+			getSiblings: () => options.parent.children,
+			getSibling: key => options.parent.children[key],
+			getRoot: () => options.root
+		});
+		options.registry[child_obj.registry_key] = child_obj;
 
 		children[name] = child_obj;
 	});

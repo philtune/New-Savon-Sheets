@@ -24,9 +24,9 @@ export class Calculr {
 	static getHelper(field_calc) {
 		const registry = field_calc.getRoot().registry;
 		const helper = {
-			search: key => {
-				if ( registry.hasOwnProperty(key) ) {
-					return registry[key];
+			search: registry_key => {
+				if ( registry.hasOwnProperty(registry_key) ) {
+					return registry[registry_key];
 				}
 				return null;
 			},
@@ -34,14 +34,14 @@ export class Calculr {
 			getParent: () => field_calc.getParent(),
 			getSiblings: () => field_calc.getParent().children,
 			getSibling: key => field_calc.getParent().children[key],
-			value: key => helper.search(key).value,
-			sum: (array_key, key) => helper.search(array_key).sum(key),
+			value: registry_key => helper.search(registry_key).value,
+			sum: (array_registry_key, key) => helper.search(array_registry_key).sum(key),
 			closest_array: () => field_calc.closest_array,
-			calculate: (array_key, key) =>
+			calculate: (array_registry_key, key) =>
 				( undefined !== key ) ?
-					helper.search(array_key).array_calculate(key) :
-					helper.search(array_key).calculate(),
-			invoke: (key) => {
+					helper.search(array_registry_key).array_calculate(key) :
+					helper.search(array_registry_key).calculate(),
+			invoke: key => {
 				if ( key in field_calc.getRoot().methods ) {
 					field_calc.getRoot().methods[key](helper);
 				}
@@ -50,9 +50,9 @@ export class Calculr {
 		return helper;
 	}
 
-	search = key => {
-		if ( this.registry.hasOwnProperty(key) ) {
-			return this.registry[key];
+	search = registry_key => {
+		if ( this.registry.hasOwnProperty(registry_key) ) {
+			return this.registry[registry_key];
 		}
 		return null;
 	};
@@ -99,7 +99,7 @@ export class Calculr {
 				throw new Error('Testing Error');
 			}
 		};
-		const getval = key => search(key).value;
+		const getval = registry_key => search(registry_key).value;
 		tests_cb(run, assert, search, getval);
 	};
 
