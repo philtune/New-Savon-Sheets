@@ -57,6 +57,41 @@ export class Calculr {
 		return null;
 	};
 
+	static getTestHelpers = (calc, field_calc) => ({
+		assert: (input, testVal) => {
+			const warn = [console.warn, headless][0];
+			const error = [console.error, headlessError][0];
+			let passed = true, code;
+			if ( typeof input === 'function' ) {
+				code = input;
+				passed = input();
+			} else {
+				if ( typeof input === 'string' ) {
+					passed = calc.search(input).value === testVal;
+					code = `${input} === ${testVal}`;
+				} else if ( Array.isArray(input) ) {
+					if ( testVal || false ) {
+						passed = input[0] !== input[1];
+						code = `${input[0]} !== ${input[1]}`;
+					} else {
+						passed = input[0] === input[1];
+						code = `${input[0]} === ${input[1]}`;
+					}
+				}
+			}
+			if ( passed ) {
+				warn('%c Passed assert() @ '+getCaller()+' ', 'background: lightgreen', code);
+			} else {
+				error('%c Failed assert() @ '+getCaller()+' ', 'background: red; color: white', code);
+				throw new Error('Testing Error');
+			}
+		},
+		search: calc.search,
+		getval: registry_key => calc.search(registry_key).value,
+		thisval: field_calc.value,
+		warn: [console.warn, headless][0]
+	});
+
 	runTests = tests_cb => {
 		const warn = [console.warn, headless][0];
 		const error = [console.error, headlessError][0];
@@ -81,25 +116,8 @@ export class Calculr {
 			return input_calc;
 		};
 		const search = this.search;
-		const assert = (input, testVal) => {
-			let passed = true, code;
-			if ( typeof input === 'function' ) {
-				code = input;
-				passed = input();
-			} else {
-				if ( typeof input === 'string' ) {
-					passed = search(input).value === testVal;
-					code = `${input} === ${testVal}`;
-				}
-			}
-			if ( passed ) {
-				warn('%c Passed assert() @ '+getCaller()+' ', 'background: lightgreen', code);
-			} else {
-				error('%c Failed assert() @ '+getCaller()+' ', 'background: red; color: white', code);
-				throw new Error('Testing Error');
-			}
-		};
-		const getval = registry_key => search(registry_key).value;
+		const assert = Calculr.getTestHelpers(this,{value:null}).assert;
+		const getval = registry_key => this.search(registry_key).value;
 		tests_cb(run, assert, search, getval);
 	};
 

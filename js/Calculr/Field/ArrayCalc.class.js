@@ -1,56 +1,60 @@
 import {ObjectCalc} from "./ObjectCalc.class.js";
-import {Calculr} from "./Calculr.class.js";
+import {Calculr} from "../Calculr.class.js";
+import {Field} from "./Field.class.js";
+import {getCaller} from "../../library.js";
 
-export class ArrayCalc {
+let collection_length = 0;
 
-	name;
+function testAdd(self) {
+	const tH = Calculr.getTestHelpers(self.getRoot(), self);
+	tH.warn('%c run() @ '+getCaller(5)+' ', 'background: #222; color: #bada55', `'${self.registry_key}'.add()`);
+	tH.assert([self.getLength(), ++collection_length]);
+}
+
+export class ArrayCalc extends Field {
+
 	type = 'array';
-	registry_key;
 	collection = [];
 
 	constructor(options) {
-		this.getOptions = () => options;
-		this.getLength = () => this.collection.length;
+		super(options);
 	}
 
-	add = () => {
+	getLength = () => this.collection.length;
 
+	add = () => {
 		const
 			index = this.getLength(),
 			registry_key = this.registry_key + '[' + index + ']',
-			item = Object.assign(new ObjectCalc({
+			item = new ObjectCalc({
+				name: index,
 				registry_key: registry_key,
 				parent: this,
 				is_array_item: true,
 				registry: this.getOptions().registry,
 				children_configs: this.getOptions().children_configs,
-				data_parent: this.getOptions().data_parent[this.name],
+				data_parent: this.getDataParent()[this.name],
 				root: this.getRoot(),
-				data: this.getOptions().data_parent[this.name][index] = {}
-			}), {
-				name: index,
-				key: registry_key,
-				getParent: () => this,
-				getRoot: () => this.getRoot()
+				data: this.getDataParent()[this.name][index] = {}
 			}),
 			helper = Calculr.getHelper(item)
 		;
 
 		this.getRoot().registry[item.key] = item;
 
-		this.getOptions().registry[registry_key] = item;
 		this.collection.push(item);
 
 		if ( typeof this.getOptions().array_config.on_add === 'function' ) {
 			this.getOptions().array_config.on_add(helper);
 		}
+		testAdd(this);
 		return item;
 	};
 
 	delete = index => {
 		const helper = Calculr.getHelper(this.collection[index]);
 		delete this.collection[index];
-		delete this.getOptions().data_parent[this.name][index];
+		delete this.getDataParent()[this.name][index];
 		if ( typeof this.getOptions().array_config.on_delete === 'function' ) {
 			this.getOptions().array_config.on_delete(helper);
 		}
@@ -74,5 +78,9 @@ export class ArrayCalc {
 			}
 		});
 		return result;
-	}
+	};
+
+	each = cb => {
+		this.collection.forEach((obj, i) =>cb(obj, i));
+	};
 }

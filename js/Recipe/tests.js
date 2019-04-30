@@ -8,7 +8,7 @@ export function recipe_tests(run, assert, search, getval) {
 				`oils.list[${i}].${prop}` :
 				getval(`oils.list[${i}].${prop}`),
 		eachOil = cb => {
-			search('oils.list').collection.forEach((obj, i) =>
+			search('oils.list').each((obj, i) =>
 				cb(thisOil(i), i)
 			);
 		},
@@ -97,7 +97,6 @@ export function recipe_tests(run, assert, search, getval) {
 			assert('settings.naoh_perc', round(1 - getval('settings.koh_perc')));
 			eachOil(oil => {
 				testAlkaliNeeded(oil);
-				// testThisOilKohNeeded(oil);
 			});
 		},
 		naohPurity = val => {
@@ -120,63 +119,39 @@ export function recipe_tests(run, assert, search, getval) {
 			});
 			assert('oils.koh_needed', round(koh_needed));
 		},
-		thisOilWeight = (index, weight) => {
+		testThisOilWeight = index => {
 			let
-				oil = thisOil(index),
-				oils_weight = 0,
-				naoh_needed = 0,
-				koh_needed = 0
+				oil = thisOil(index)
 			;
-			run(oil('weight', true), weight);
-			assert(oil('weight', true), weight);
-			eachOil(oil => {
-				oils_weight += oil('weight') || 0;
-				naoh_needed += oil('naoh_needed') || 0;
-				koh_needed += oil('koh_needed') || 0;
-			});
 			if ( oil('oil') ) {
 				testAlkaliNeeded(oil);
 			}
-			assert('oils.naoh_needed', round(naoh_needed));
-			assert('oils.koh_needed', round(koh_needed));
-			assert(`oils.weight`, round(oils_weight));
-			assert(`oils.percent`, 1);
-			eachOil(oil => assert(oil('percent', true), round(oil('weight') / getval('oils.weight'))));
 		}
 	;
 
-
-	run('settings.cure_days', 6 * 7);
-	assert('settings.cure_days', 6 * 7);
-	assert(() => getval('made_at').toString() !== getval('cured_at').toString());
-
-	run('made_at', '3/29/19');
-	assert(() => getval('made_at').getDate() === 29);
-	assert(() => getval('cured_at').getDate() === 10);
-
-	run(() => search('oils.list').add());
-	assert(() => search('oils.list').getLength() === 1);
-
-	thisOilWeight(0, 60);
-
-	run(() => search('oils.list').add());
-	assert(() => search('oils.list').getLength() === 2);
-
-	thisOilWeight(1, 15);
+	search('settings.cure_days').input(6*7);
+	search('made_at').input('3/29/19');
+	search('oils.list').add();
+	search('oils.list[0].weight').input(60);
+	testThisOilWeight(0);
+	search('oils.list').add();
+	search('oils.list[1].weight').input(15);
+	testThisOilWeight(1);
 	oilsWeight(20);
 	thisOilPerc(1, .321);
 	oilsWeight(50);
-	thisOilWeight(0, 20);
+	search('oils.list[0].weight').input(20);
+	testThisOilWeight(0);
 	thisOilOilID(0, 1);
 	thisOilOilID(1, 0);
 	deleteOil(0);
 
-	run(() => search('oils.list').add());
-	assert(() => search('oils.list').getLength() === 3);
+	search('oils.list').add();
 
 	thisOilOilID(2, 1);
 	naohPurity(.9);
-	thisOilWeight(2, 20);
+	search('oils.list[2].weight').input(20);
+	testThisOilWeight(2);
 	naohPerc(.9);
 	kohPerc(.6);
 	kohPurity(.6);

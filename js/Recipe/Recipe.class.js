@@ -1,6 +1,6 @@
 import {Calculr} from "../Calculr/Calculr.class.js";
 import {recipe_tests} from "./tests.js";
-import {updateDOM} from "../library.js";
+import {round, updateDOM} from "../library.js";
 
 class Oil {
 
@@ -57,7 +57,9 @@ export class Recipe {
 		fields: {
 			'settings:object': {
 				'cure_days': {
-					after_input: helper => helper.calculate('cured_at')
+					after_input: helper => helper.calculate('cured_at'),
+					test: (assert, search, getval, thisval) =>
+						assert([getval('cured_at').getDate(), getval('made_at').addDays(thisval).getDate()])
 				},
 				'naoh_perc': {
 					default: 1,
@@ -85,7 +87,10 @@ export class Recipe {
 				}
 			},
 			'made_at:date': {
-				after_input: helper => helper.calculate('cured_at')
+				after_input: helper => helper.calculate('cured_at'),
+				test: (assert, search, getval, thisval) => {
+					assert([getval('cured_at').getDate(), thisval.addDays(getval('settings.cure_days')).getDate()])
+				}
 			},
 			'*cured_at:date': {
 				on_calculate: helper => helper.value('made_at').addDays(helper.value('settings.cure_days'))
@@ -119,7 +124,25 @@ export class Recipe {
 							},
 							on_calculate: helper =>
 								helper.value('oils.weight') *
-								helper.getSibling('percent').value
+								helper.getSibling('percent').value,
+							test: (assert, search, getval, thisval) => {
+								let
+									oils_weight = 0,
+									oils_naoh_needed = 0,
+									oils_koh_needed = 0
+								;
+								assert(`oils.percent`, 1);
+								search('oils.list').each((oil, i) => {
+									oils_weight += oil.getval('weight');
+									oils_naoh_needed += oil.getval('naoh_needed');
+									oils_koh_needed += oil.getval('koh_needed');
+									assert(oil.search('percent').registry_key, round(oil.getval('weight') / getval('oils.weight')));
+								});
+								assert('oils.weight', round(oils_weight));
+								assert('oils.naoh_needed', round(oils_naoh_needed));
+								assert('oils.koh_needed', round(oils_koh_needed));
+								console.log('hey');
+							}
 						},
 						'percent': {
 							after_input: helper => {

@@ -1,12 +1,13 @@
-import {fieldSet} from "./fieldSet.function.js";
+import {fieldSet} from "../fieldSet.function.js";
+import {Field} from "./Field.class.js";
 
-export class ObjectCalc {
+export class ObjectCalc extends Field {
 
-	name;
 	type = 'object';
 	children;
 
 	constructor(options) {
+		super(options);
 		const children_options = {
 			children_configs: options.children_configs,
 			parent: this,
@@ -20,4 +21,8 @@ export class ObjectCalc {
 		}
 		this.children = fieldSet(children_options);
 	}
+
+	search = key => this.children[key];
+
+	getval = key => this.children[key].value;
 }

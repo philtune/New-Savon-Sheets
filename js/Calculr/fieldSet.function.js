@@ -1,7 +1,7 @@
-import {ObjectCalc} from "./ObjectCalc.class.js";
-import {ArrayCalc} from "./ArrayCalc.class.js";
-import {InputCalc} from "./InputCalc.class.js";
-import {ForeignCalc} from "./ForeignCalc.class.js";
+import {ObjectCalc} from "./Field/ObjectCalc.class.js";
+import {ArrayCalc} from "./Field/ArrayCalc.class.js";
+import {InputCalc} from "./Field/InputCalc.class.js";
+import {ForeignCalc} from "./Field/ForeignCalc.class.js";
 
 export function fieldSet(options) {
 	options.data = options.data || {};
@@ -19,6 +19,7 @@ export function fieldSet(options) {
 			type = name_config[3],
 			child_obj,
 			child_options = {
+				name: name,
 				registry_key: parent_key + name,
 				parent: options.parent,
 				registry: options.registry,
@@ -45,7 +46,6 @@ export function fieldSet(options) {
 				break;
 			default:
 				options.data[name] = null;
-				child_options.name = name;
 				child_options.input_config = field_config;
 				child_options.type = type || field_config.type || 'input';
 				child_obj = new InputCalc(child_options);
@@ -53,14 +53,6 @@ export function fieldSet(options) {
 				break;
 		}
 
-		child_obj = Object.assign(child_obj, {
-			name: name,
-			registry_key: parent_key + name,
-			getParent: () => options.parent,
-			getSiblings: () => options.parent.children,
-			getSibling: key => options.parent.children[key],
-			getRoot: () => options.root
-		});
 		options.registry[child_obj.registry_key] = child_obj;
 
 		children[name] = child_obj;
