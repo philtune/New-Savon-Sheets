@@ -1,6 +1,6 @@
 function jsonify(obj) {
 	let cache = [];
-	let result = JSON.stringify(obj, function(key, value) {
+	let result = JSON.stringify(obj, (key, value) => {
 		if (typeof value === 'object' && value !== null) {
 			if (cache.indexOf(value) !== -1) {
 				// Duplicate reference found

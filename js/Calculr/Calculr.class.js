@@ -57,68 +57,55 @@ export class Calculr {
 		return null;
 	};
 
-	static getTestHelpers = (calc, field_calc) => ({
-		assert: (input, testVal) => {
-			const warn = [console.warn, headless][0];
-			const error = [console.error, headlessError][0];
-			let passed = true, code;
-			if ( typeof input === 'function' ) {
-				code = input;
-				passed = input();
-			} else {
-				if ( typeof input === 'string' ) {
-					passed = calc.search(input).value === testVal;
-					code = `${input} === ${testVal}`;
-				} else if ( Array.isArray(input) ) {
-					if ( testVal || false ) {
-						passed = input[0] !== input[1];
-						code = `${input[0]} !== ${input[1]}`;
-					} else {
-						passed = input[0] === input[1];
-						code = `${input[0]} === ${input[1]}`;
+	static getTestHelpers = (calc, field_calc) => {
+		const helper = {
+			assert: (input, testVal) => {
+				const warn = [console.warn, headless][0];
+				const error = [console.error, headlessError][0];
+				let passed = true, code;
+				if ( typeof input === 'function' ) {
+					code = input;
+					passed = input();
+				} else {
+					if ( typeof input === 'string' ) {
+						passed = calc.search(input).value === testVal;
+						code = `${input} === ${testVal}`;
+					} else if ( Array.isArray(input) ) {
+						if ( testVal || false ) {
+							passed = input[0] !== input[1];
+							code = `${input[0]} !== ${input[1]}`;
+						} else {
+							passed = input[0] === input[1];
+							code = `${input[0]} === ${input[1]}`;
+						}
 					}
 				}
-			}
-			if ( passed ) {
-				warn('%c Passed assert() @ '+getCaller()+' ', 'background: lightgreen', code);
-			} else {
-				error('%c Failed assert() @ '+getCaller()+' ', 'background: red; color: white', code);
-				throw new Error('Testing Error');
-			}
-		},
-		search: calc.search,
-		getval: registry_key => calc.search(registry_key).value,
-		thisval: field_calc.value,
-		warn: [console.warn, headless][0]
-	});
+				if ( passed ) {
+					warn('%c Passed assert() @ '+getCaller()+' ', 'background: lightgreen', code);
+				} else {
+					error('%c Failed assert() @ '+getCaller()+' ', 'background: red; color: white', code);
+					throw new Error('Testing Error');
+				}
+			},
+			search: calc.search,
+			getval: registry_key => calc.search(registry_key).value,
+			thisval: field_calc.value,
+			invoke: key => {
+				if ( key in field_calc.getRoot().methods ) {
+					field_calc.getRoot().methods[key](helper);
+				}
+			},
+			self: field_calc,
+			warn: [console.warn, headless][0]
+		};
+		return helper;
+	};
 
 	runTests = tests_cb => {
-		const warn = [console.warn, headless][0];
-		const error = [console.error, headlessError][0];
-		const run = (input, val) => {
-			let
-				code,
-				input_calc
-			;
-			if ( typeof input === 'function' ) {
-				code = input;
-				input_calc = null;
-				input();
-			} else {
-				if ( typeof input === 'string' && val !== undefined ) {
-					input_calc = search(input);
-					search(input).input(val);
-					code = `${input} = ${val}`;
-				}
-			}
-			warn('%c run() @ '+getCaller()+' ', 'background: #222; color: #bada55', code);
-			updateDOM(this);
-			return input_calc;
-		};
 		const search = this.search;
 		const assert = Calculr.getTestHelpers(this,{value:null}).assert;
 		const getval = registry_key => this.search(registry_key).value;
-		tests_cb(run, assert, search, getval);
+		tests_cb(assert, search, getval);
 	};
 
 }

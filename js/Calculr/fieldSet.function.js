@@ -10,7 +10,7 @@ export function fieldSet(options) {
 		options.parent_key !== null ?
 			options.parent_key + '.' :
 			'';
-	Object.keys(options.children_configs).forEach(function(key) {
+	Object.keys(options.children_configs).forEach(key => {
 		let field_config = options.children_configs[key];
 		let name_config = key.match(/(\*)?([^:]+):?(.*)?/);
 		let

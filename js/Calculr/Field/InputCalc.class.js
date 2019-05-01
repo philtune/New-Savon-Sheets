@@ -14,12 +14,17 @@ function set(self, val) {
 	self.getDataParent()[self.name] = val;
 }
 
-function testInput(self, val) {
-	const tH = Calculr.getTestHelpers(self.getRoot(), self);
-	tH.warn('%c run() @ '+getCaller(5)+' ', 'background: #222; color: #bada55', `${self.registry_key} = ${val}`);
-	tH.assert(self.registry_key, val);
-	if ( typeof self.getTest() === 'function' ) {
-		self.getTest()(tH.assert, tH.search, tH.getval, tH.thisval);
+function testInput(helper, self, val) {
+	helper.assert(self.registry_key, val);
+	if ( typeof self.getTestInput() === 'function' ) {
+		self.getTestInput()(helper);
+	}
+}
+
+function testCalculate(self) {
+	const helper = Calculr.getTestHelpers(self.getRoot(), self);
+	if ( typeof self.getTestCalculate() === 'function' ) {
+		self.getTestCalculate()(helper);
 	}
 }
 
@@ -31,7 +36,8 @@ export class InputCalc extends Field {
 	constructor(options) {
 		super(options);
 		this.type = options.type;
-		this.getTest = () => options.input_config.test;
+		this.getTestInput = () => options.input_config.test_input;
+		this.getTestCalculate = () => options.input_config.test_calculate;
 		this.getOnCalculate = () => options.input_config.on_calculate;
 		this.getAfterInput = () => options.input_config.after_input;
 		if ( options.closest_array ) {
@@ -61,6 +67,8 @@ export class InputCalc extends Field {
 	 * @returns {InputCalc}
 	 */
 	input = val => {
+		const helper = Calculr.getTestHelpers(this.getRoot(), this);
+		helper.warn('%c run() @ '+getCaller(4)+' ', 'background: #222; color: #bada55', `${this.registry_key} = ${val}`);
 		if ( !this.can_input ) {
 			return this;
 		}
@@ -80,7 +88,7 @@ export class InputCalc extends Field {
 			this.getAfterInput()(this.getHelper());
 		}
 		updateDOM(this.getRoot());
-		testInput(this, val);
+		testInput(helper, this, val);
 		return this;
 	};
 
@@ -90,6 +98,7 @@ export class InputCalc extends Field {
 			result = this.getOnCalculate()(this.getHelper());
 		}
 		set(this, result);
+		testCalculate(this, result);
 		return result;
 	};
 
