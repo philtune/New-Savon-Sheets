@@ -24,5 +24,7 @@ export class ObjectCalc extends Field {
 
 	childval = key => this.children[key].value;
 
+	find = key => this.children[key];
+
 	findkey = key => this.children[key].registry_key;
 }

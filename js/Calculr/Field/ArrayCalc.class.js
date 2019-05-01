@@ -59,8 +59,10 @@ export class ArrayCalc extends Field {
 
 	delete = index => {
 		let time = Date.now();
-		// TODO: https://medium.com/@cristiansalcescu/learn-immutability-with-javascript-6a67e4a48d7f#f738
-		// const newBooks = [...books.slice(0, index), ...books.slice(index + 1)];
+		/**
+		 *  TODO: https://medium.com/@cristiansalcescu/learn-immutability-with-javascript-6a67e4a48d7f#f738
+		 *  const newBooks = [...books.slice(0, index), ...books.slice(index + 1)];
+		 */
 		delete this.collection[index];
 		delete this.getDataParent()[this.name][index];
 		if ( typeof this.getOptions().array_config.on_delete === 'function' ) {
@@ -76,7 +78,7 @@ export class ArrayCalc extends Field {
 
 	sum = key => {
 		let result = 0;
-		this.each((item, i) => {
+		this.each(item => {
 			if ( typeof item === 'object' ) {
 				result += item.children[key].value || 0;
 			}
@@ -86,7 +88,7 @@ export class ArrayCalc extends Field {
 
 	array_calc = key => {
 		let result = 0;
-		this.each((item, i) => {
+		this.each(item => {
 			if ( typeof item === 'object' ) {
 				result += item.children[key].calculate();
 			}

@@ -47,6 +47,22 @@ export class Recipe {
 				calc.search('oils.naoh_needed').calculate();
 				calc.search('oils.koh_needed').calculate();
 			},
+			test_each_oil_alkali(calc) {
+				calc.search('oils.list').each(oil => {
+					calc.assert(oil.findkey('naoh_needed'), round(
+						( oil.childval('oil').naoh_sap || 0 ) *
+						oil.childval('weight') /
+						calc.getval('settings.naoh_purity') *
+						calc.getval('settings.naoh_perc')
+					));
+					calc.assert(oil.findkey('koh_needed'), round(
+						( oil.childval('oil').koh_sap || 0 ) *
+						oil.childval('weight') /
+						calc.getval('settings.koh_purity') *
+						calc.getval('settings.koh_perc')
+					));
+				})
+			}
 		},
 		fields: {
 			'settings:object': {
@@ -67,9 +83,7 @@ export class Recipe {
 					on_calculate: self => 1 - self.getval('settings.koh_perc'),
 					test_input: self => {
 						self.assert('settings.koh_perc', round(1 - self.value));
-						self.search('oils.list').each((obj, i) => {
-							// self.invoke('test_this_alkali');
-						})
+						self.invoke('test_each_oil_alkali');
 					}
 				},
 				'koh_perc': {
@@ -81,6 +95,7 @@ export class Recipe {
 					on_calculate: self => 1 - self.getval('settings.naoh_perc'),
 					test_input: self => {
 						self.assert('settings.naoh_perc', round(1 - self.value));
+						self.invoke('test_each_oil_alkali');
 					}
 				},
 				'naoh_purity': {
@@ -175,7 +190,7 @@ export class Recipe {
 								self.getval('oils.weight') *
 								self.getSibling('percent').value,
 							test_input: self => {
-								self.search('oils.list').each((oil, i) => {
+								self.search('oils.list').each(oil => {
 									self.assert(oil.findkey('percent'), round(oil.childval('weight') / self.getval('oils.weight')));
 								});
 								self.assert(`oils.percent`, 1);
@@ -229,7 +244,7 @@ export class Recipe {
 					after_input: self => self.search('oils.list').array_calc('weight'),
 					on_calculate: self => self.search('oils.list').sum('weight'),
 					test_input: self => {
-						self.search('oils.list').each((oil, i) => {
+						self.search('oils.list').each(oil => {
 							self.assert(oil.findkey('weight'), self.getval('oils.weight') * oil.childval('percent'))
 						});
 					}

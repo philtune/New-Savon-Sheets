@@ -1,5 +1,5 @@
 import {fieldSet} from "./fieldSet.function.js";
-import {getCaller, headless, headlessError, updateDOM} from "../library.js";
+import {getCaller, headless, headlessError} from "../library.js";
 
 export class Calculr {
 
@@ -72,7 +72,7 @@ export class Calculr {
 	};
 
 	runTests = tests_cb =>
-		tests_cb(this.assert, this.search, registry_key => this.search(registry_key).value);
+		tests_cb(this.search);
 
 }
 
