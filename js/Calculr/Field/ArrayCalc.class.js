@@ -1,22 +1,19 @@
 import {ObjectCalc} from "./ObjectCalc.class.js";
-import {Calculr} from "../Calculr.class.js";
 import {Field} from "./Field.class.js";
 import {getCaller} from "../../library.js";
 
 let collection_length = 0;
 
 function testAdd(self) {
-	const tH = Calculr.getTestHelpers(self.getRoot(), self);
-	tH.warn('%c run() @ '+getCaller(5)+' ', 'background: #222; color: #bada55', `'${self.registry_key}'.add()`);
-	tH.assert([self.getLength(), ++collection_length]);
+	console.warn(`%c ${self.registry_key}.add() @ ${getCaller(5)} `, 'background: #222; color: #bada55');
+	self.assert([self.getLength(), ++collection_length]);
 }
 
-function testDelete(array, index) {
-	const tH = Calculr.getTestHelpers(array.getRoot(), array);
-	tH.warn('%c run() @ '+getCaller(5)+' ', 'background: #222; color: #bada55', `'${array.registry_key}'.delete(${index})`);
-	tH.assert([array.collection[index], undefined]);
-	if ( typeof array.getTestDelete() === 'function' ) {
-		array.getTestDelete()(tH.assert, tH.search, tH.getval, array);
+function testDelete(self, index) {
+	console.warn(`%c ${self.registry_key}.delete(${index}) @ ${getCaller(5)} `, 'background: #222; color: #bada55');
+	self.assert([self.collection[index], undefined]);
+	if ( typeof self.getTestDelete() === 'function' ) {
+		self.getTestDelete()(self);
 	}
 }
 
@@ -33,6 +30,7 @@ export class ArrayCalc extends Field {
 	getLength = () => this.collection.length;
 
 	add = () => {
+		let time = Date.now();
 		const
 			index = this.getLength(),
 			registry_key = this.registry_key + '[' + index + ']',
@@ -46,29 +44,30 @@ export class ArrayCalc extends Field {
 				data_parent: this.getDataParent()[this.name],
 				root: this.getRoot(),
 				data: this.getDataParent()[this.name][index] = {}
-			}),
-			helper = Calculr.getHelper(item)
+			})
 		;
 
 		this.getRoot().registry[item.key] = item;
 
+		// TODO: https://medium.com/@cristiansalcescu/learn-immutability-with-javascript-6a67e4a48d7f#f738
 		this.collection.push(item);
 
-		if ( typeof this.getOptions().array_config.on_add === 'function' ) {
-			this.getOptions().array_config.on_add(helper);
-		}
 		testAdd(this);
+		console.warn('%c took '+(Date.now()-time)+'ms ', 'background: #666; color: #fff');
 		return item;
 	};
 
 	delete = index => {
-		const helper = Calculr.getHelper(this.collection[index]);
+		let time = Date.now();
+		// TODO: https://medium.com/@cristiansalcescu/learn-immutability-with-javascript-6a67e4a48d7f#f738
+		// const newBooks = [...books.slice(0, index), ...books.slice(index + 1)];
 		delete this.collection[index];
 		delete this.getDataParent()[this.name][index];
 		if ( typeof this.getOptions().array_config.on_delete === 'function' ) {
-			this.getOptions().array_config.on_delete(helper);
+			this.getOptions().array_config.on_delete(this);
 		}
 		testDelete(this, index);
+		console.warn('%c took '+(Date.now()-time)+'ms ', 'background: #666; color: #fff');
 	};
 
 	each = cb => {
@@ -85,7 +84,7 @@ export class ArrayCalc extends Field {
 		return result;
 	};
 
-	array_calculate = key => {
+	array_calc = key => {
 		let result = 0;
 		this.each((item, i) => {
 			if ( typeof item === 'object' ) {

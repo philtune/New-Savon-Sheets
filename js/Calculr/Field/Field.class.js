@@ -8,5 +8,10 @@ export class Field {
 		this.getRoot = () => options.root;
 		this.getDataParent = () => options.data_parent;
 		this.getOptions = () => options;
+		this.search = this.getRoot().search;
+		this.getval = this.getRoot().getval;
+		this.runcalc = this.getRoot().runcalc;
+		this.invoke = this.getRoot().invoke;
+		this.assert = this.getRoot().assert;
 	}
 }

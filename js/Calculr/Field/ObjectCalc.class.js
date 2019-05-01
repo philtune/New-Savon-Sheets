@@ -22,7 +22,7 @@ export class ObjectCalc extends Field {
 		this.children = fieldSet(children_options);
 	}
 
-	getval = key => this.children[key].value;
+	childval = key => this.children[key].value;
 
 	findkey = key => this.children[key].registry_key;
 }

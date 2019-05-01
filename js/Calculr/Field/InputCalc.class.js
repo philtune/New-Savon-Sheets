@@ -1,30 +1,19 @@
 import {getCaller, round, updateDOM} from "../../library.js";
-import {Calculr} from "../Calculr.class.js";
 import {Field} from "./Field.class.js";
 
-/**
- * @param self
- * @param val
- */
 function set(self, val) {
 	if ( typeof val === 'number' ) {
 		val = round(val);
 	}
+	// TODO: immutability?
 	self.value = val;
 	self.getDataParent()[self.name] = val;
 }
 
-function testInput(helper, self, val) {
-	helper.assert(self.registry_key, val);
+function testInput(self, val) {
+	self.assert(self.registry_key, val);
 	if ( typeof self.getTestInput() === 'function' ) {
-		self.getTestInput()(helper);
-	}
-}
-
-function testCalculate(self) {
-	const helper = Calculr.getTestHelpers(self.getRoot(), self);
-	if ( typeof self.getTestCalculate() === 'function' ) {
-		self.getTestCalculate()(helper);
+		self.getTestInput()(self);
 	}
 }
 
@@ -33,42 +22,35 @@ export class InputCalc extends Field {
 	type = null;
 	value;
 
-	constructor(options) {
+	constructor({input_config: config, type='input', ...options} = {}) {
 		super(options);
-		this.type = options.type;
-		this.getTestInput = () => options.input_config.test_input;
-		this.getTestCalculate = () => options.input_config.test_calculate;
-		this.getOnCalculate = () => options.input_config.on_calculate;
-		this.getAfterInput = () => options.input_config.after_input;
+		this.type = type;
+		this.getTestInput = () => config.test_input;
+		this.getOnCalculate = () => config.on_calculate;
+		this.getAfterInput = () => config.after_input;
 		if ( options.closest_array ) {
 			this.closest_array = options.closest_array;
 		}
 
 		switch ( this.type ) {
 			case 'date':
-				set(this, 'default' in options.input_config ?
-					options.input_config.default : new Date());
+				set(this, 'default' in config ?
+					config.default : new Date());
 				break;
 			case 'string':
-				set(this, 'default' in options.input_config ?
-					options.input_config.default : '');
+				set(this, 'default' in config ?
+					config.default : '');
 				break;
 			default:
-				set(this, 'default' in options.input_config ?
-					options.input_config.default : 0);
+				set(this, 'default' in config ?
+					config.default : 0);
 				break;
 		}
-
-		this.getHelper = () => Calculr.getHelper(this);
 	}
 
-	/**
-	 * @param val
-	 * @returns {InputCalc}
-	 */
 	input = val => {
-		const helper = Calculr.getTestHelpers(this.getRoot(), this);
-		helper.warn('%c run() @ '+getCaller(4)+' ', 'background: #222; color: #bada55', `${this.registry_key} = ${val}`);
+		let time = Date.now();
+		console.warn(`%c ${this.registry_key}.input(${val}) @ ${getCaller(4)}`, 'background: #222; color: #bada55');
 		if ( !this.can_input ) {
 			return this;
 		}
@@ -85,20 +67,20 @@ export class InputCalc extends Field {
 		}
 		set(this, val);
 		if ( typeof this.getAfterInput() === 'function' ) {
-			this.getAfterInput()(this.getHelper());
+			this.getAfterInput()(this);
 		}
 		updateDOM(this.getRoot());
-		testInput(helper, this, val);
+		testInput(this, val);
+		console.warn('%c took '+(Date.now()-time)+'ms ', 'background: #666; color: #fff');
 		return this;
 	};
 
 	calculate = () => {
 		let result;
 		if ( typeof this.getOnCalculate() === 'function' ) {
-			result = this.getOnCalculate()(this.getHelper());
+			result = this.getOnCalculate()(this);
 		}
 		set(this, result);
-		testCalculate(this, result);
 		return result;
 	};
 

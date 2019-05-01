@@ -1,27 +1,21 @@
 import {Calculr} from "../Calculr/Calculr.class.js";
-import {recipe_tests} from "./tests.js";
 import {round, updateDOM} from "../library.js";
+import {tests} from "./tests.js";
 
-class Oil {
-
-	static get(key) {
-		return {
-			0: {
-				id: 0,
-				name: 'Olive Oil',
-				naoh_sap: 0.135,
-				koh_sap: 0.19
-			},
-			1: {
-				id: 1,
-				name: 'Coconut Oil',
-				naoh_sap: 0.183,
-				koh_sap: 0.257
-			}
-		}[key];
+const oils = {
+	0: {
+		id: 0,
+		name: 'Olive Oil',
+		naoh_sap: 0.135,
+		koh_sap: 0.19
+	},
+	1: {
+		id: 1,
+		name: 'Coconut Oil',
+		naoh_sap: 0.183,
+		koh_sap: 0.257
 	}
-
-}
+};
 
 export class Recipe {
 
@@ -29,214 +23,231 @@ export class Recipe {
 		updateDOM(this.calc);
 	}
 
-	runTests() {
-		this.calc.runTests(recipe_tests);
-	}
-
 	calc = new Calculr({
 		methods: {
-			calc_naoh(helper) {
-				helper.calculate('oils.list','naoh_needed');
-				helper.calculate('oils.naoh_needed');
+			calc_naoh(calc) {
+				calc.search('oils.list').array_calc('naoh_needed');
+				calc.runcalc('oils.naoh_needed');
 			},
-			test_naoh(helper) {
-				helper.assert('oils.naoh_needed', round(helper.search('oils.list').sum('naoh_needed')));
+			test_naoh(calc) {
+				calc.assert('oils.naoh_needed', round(calc.search('oils.list').sum('naoh_needed')));
 			},
-			calc_koh(helper) {
-				helper.calculate('oils.list','koh_needed');
-				helper.calculate('oils.koh_needed');
+			calc_koh(calc) {
+				calc.search('oils.list').array_calc('koh_needed');
+				calc.runcalc('oils.koh_needed');
 			},
-			test_koh(helper) {
-				helper.assert('oils.koh_needed', round(helper.search('oils.list').sum('koh_needed')));
+			test_oils_koh_needed(calc) {
+				calc.assert('oils.koh_needed', round(calc.search('oils.list').sum('koh_needed')));
 			},
-			calc_alkali(helper) {
-				helper.invoke('calc_naoh');
-				helper.invoke('calc_koh');
+			calc_alkali(calc) {
+				calc.invoke('calc_naoh');
+				calc.invoke('calc_koh');
 			},
-			calc_this_alkali(helper) {
-				helper.getSibling('naoh_needed').calculate();
-				helper.getSibling('koh_needed').calculate();
-				helper.calculate('oils.naoh_needed');
-				helper.calculate('oils.koh_needed');
+			calc_this_alkali(calc) {
+				calc.search('oils.naoh_needed').calculate();
+				calc.search('oils.koh_needed').calculate();
 			},
-			test_this_alkali(helper) {
-
-			}
 		},
 		fields: {
 			'settings:object': {
 				'cure_days': {
-					after_input: helper => helper.calculate('cured_at'),
-					test_input: helper =>
-						helper.assert([
-							helper.getval('cured_at').getDate(),
-							helper.getval('made_at').addDays(helper.self.value).getDate()
+					after_input: self => self.runcalc('cured_at'),
+					test_input: self =>
+						self.assert([
+							self.getval('cured_at').getDate(),
+							self.getval('made_at').addDays(self.value).getDate()
 						])
 				},
 				'naoh_perc': {
 					default: 1,
-					after_input: helper => {
-						helper.calculate('settings.koh_perc');
-						helper.invoke('calc_alkali');
+					after_input: self => {
+						self.runcalc('settings.koh_perc');
+						self.invoke('calc_alkali');
 					},
-					on_calculate: helper => 1 - helper.value('settings.koh_perc'),
-					test_input: helper => {
-						helper.assert('settings.koh_perc', round(1 - helper.self.value));
+					on_calculate: self => 1 - self.getval('settings.koh_perc'),
+					test_input: self => {
+						self.assert('settings.koh_perc', round(1 - self.value));
+						self.search('oils.list').each((obj, i) => {
+							// self.invoke('test_this_alkali');
+						})
 					}
 				},
 				'koh_perc': {
 					default: 0,
-					after_input: helper => {
-						helper.calculate('settings.naoh_perc');
-						helper.invoke('calc_alkali');
+					after_input: self => {
+						self.runcalc('settings.naoh_perc');
+						self.invoke('calc_alkali');
 					},
-					on_calculate: helper => 1 - helper.value('settings.naoh_perc'),
-					test_input: helper => {
-						helper.assert('settings.naoh_perc', round(1 - helper.self.value));
+					on_calculate: self => 1 - self.getval('settings.naoh_perc'),
+					test_input: self => {
+						self.assert('settings.naoh_perc', round(1 - self.value));
 					}
 				},
 				'naoh_purity': {
 					default: 1,
-					after_input: helper => helper.invoke('calc_naoh'),
-					test_input: helper => helper.invoke('test_naoh')
+					after_input: self => self.invoke('calc_naoh'),
+					test_input: self => self.invoke('test_naoh')
 				},
 				'koh_purity': {
 					default: 1,
-					after_input: helper => helper.invoke('calc_koh'),
-					test_input: helper => {
-						helper.assert('oils.koh_needed', round(helper.search('oils.list').sum('koh_needed')));
-						helper.search('oils.list').each((obj, i) => {
+					after_input: self => {
+						// self.invoke('calc_koh');
+						self.search('oils.list').array_calc('koh_needed');
+						self.runcalc('oils.koh_needed');
+					},
+					test_input: self => {
+						self.assert('oils.koh_needed', round(self.search('oils.list').sum('koh_needed')));
+						self.search('oils.list').each((obj, i) => {
 							let oil = (prop, return_str) =>
 								return_str ?
 									`oils.list[${i}].${prop}` :
-									helper.getval(`oils.list[${i}].${prop}`);
-							helper.assert(oil('koh_needed', true), round(
+									self.getval(`oils.list[${i}].${prop}`);
+							self.assert(oil('koh_needed', true), round(
 								( oil('oil').koh_sap || 0 ) *
 								oil('weight') /
-								helper.getval('settings.koh_purity') *
-								helper.getval('settings.koh_perc'))
+								self.getval('settings.koh_purity') *
+								self.getval('settings.koh_perc'))
 							)
 						});
-						helper.invoke('test_koh');
+						self.invoke('test_oils_koh_needed');
 					}
 				}
 			},
 			'made_at:date': {
-				after_input: helper => helper.calculate('cured_at'),
-				test_input: helper => {
-					helper.assert([helper.getval('cured_at').getDate(), helper.self.value.addDays(helper.getval('settings.cure_days')).getDate()])
+				after_input: self => self.runcalc('cured_at'),
+				test_input: self => {
+					self.assert([self.getval('cured_at').getDate(), self.value.addDays(self.getval('settings.cure_days')).getDate()])
 				}
 			},
 			'*cured_at:date': {
-				on_calculate: helper => helper.value('made_at').addDays(helper.value('settings.cure_days'))
+				on_calculate: self => self.getval('made_at').addDays(self.getval('settings.cure_days'))
 			},
 			'oils:object': {
 				'list:array': {
-					on_delete(helper) {
-						helper.calculate('oils.weight');
-						helper.calculate('oils.percent');
-						helper.calculate('oils.naoh_needed');
-						helper.calculate('oils.koh_needed');
+					on_delete: self => {
+						self.runcalc('oils.weight');
+						self.runcalc('oils.percent');
+						self.runcalc('oils.naoh_needed');
+						self.runcalc('oils.koh_needed');
 					},
-					test_delete: (assert, search, getval, self) => {
-						assert('oils.weight', round(search('oils.list').sum('weight')));
-						assert('oils.percent', round(search('oils.list').sum('percent')));
-						assert('oils.naoh_needed', round(search('oils.list').sum('naoh_needed')));
-						assert('oils.koh_needed', round(search('oils.list').sum('koh_needed')));
+					test_delete: self => {
+						self.assert('oils.weight', round(self.search('oils.list').sum('weight')));
+						self.assert('oils.percent', round(self.search('oils.list').sum('percent')));
+						self.assert('oils.naoh_needed', round(self.search('oils.list').sum('naoh_needed')));
+						self.assert('oils.koh_needed', round(self.search('oils.list').sum('koh_needed')));
 					},
 					fields: {
-						'oilForeign:foreign': Oil,
-						// TODO: handle foreign resources
 						'oil_id': {
-							after_input: helper => {
-								helper.getSibling('oil').calculate();
-								helper.invoke('calc_this_alkali');
+							after_input: self => {
+								self.getSibling('oil').calculate();
+								self.getSibling('naoh_needed').calculate();
+								self.getSibling('koh_needed').calculate();
+								self.invoke('calc_this_alkali');
 							},
-							test_input: helper => {
-								console.log('oil_id: finish testing alkali');
+							test_input: self => {
+								self.assert(self.getSibling('naoh_needed').registry_key, round(
+									( self.getSibling('oil').value.naoh_sap || 0 ) *
+									self.getSibling('weight').value /
+									self.getval('settings.naoh_purity') *
+									self.getval('settings.naoh_perc')
+								));
+								self.assert(self.getSibling('koh_needed').registry_key, round(
+									( self.getSibling('oil').value.koh_sap || 0 ) *
+									self.getSibling('weight').value /
+									self.getval('settings.koh_purity') *
+									self.getval('settings.koh_perc')
+								));
 							}
 						},
 						'*oil': {
-							on_calculate: helper => Oil.get(helper.getSibling('oil_id').value)
+							on_calculate: self => oils[self.getSibling('oil_id').value]
 						},
 						'weight:weight': {
-							after_input: helper => {
-								helper.calculate('oils.weight');
-								helper.calculate('oils.list', 'percent');
-								helper.calculate('oils.percent');
-								helper.invoke('calc_this_alkali');
+							after_input: self => {
+								self.runcalc('oils.weight');
+								self.search('oils.list').array_calc('percent');
+								self.runcalc('oils.percent');
+								self.getSibling('naoh_needed').calculate();
+								self.getSibling('koh_needed').calculate();
+								self.invoke('calc_this_alkali');
 							},
-							on_calculate: helper =>
-								helper.value('oils.weight') *
-								helper.getSibling('percent').value,
-							test_input: helper => {
-								helper.assert(`oils.percent`, 1);
-								helper.search('oils.list').each((oil, i) => {
-									helper.assert(oil.findkey('percent'), round(oil.getval('weight') / helper.getval('oils.weight')));
+							on_calculate: self =>
+								self.getval('oils.weight') *
+								self.getSibling('percent').value,
+							test_input: self => {
+								self.search('oils.list').each((oil, i) => {
+									self.assert(oil.findkey('percent'), round(oil.childval('weight') / self.getval('oils.weight')));
 								});
-								helper.assert('oils.weight', round(helper.search('oils.list').sum('weight')));
-								helper.invoke('test_naoh');
-								helper.assert('oils.koh_needed', round(helper.search('oils.list').sum('koh_needed')));
-
-								console.log('weight: finish testing alkali');
+								self.assert(`oils.percent`, 1);
+								self.assert('oils.weight', round(self.search('oils.list').sum('weight')));
+								self.invoke('test_naoh');
+								self.assert('oils.koh_needed', round(self.search('oils.list').sum('koh_needed')));
+								self.assert(self.getSibling('naoh_needed').registry_key, round(
+									( self.getSibling('oil').value.naoh_sap || 0 ) *
+									self.getSibling('weight').value /
+									self.getval('settings.naoh_purity') *
+									self.getval('settings.naoh_perc')
+								));
+								self.assert(self.getSibling('koh_needed').registry_key, round(
+									( self.getSibling('oil').value.koh_sap || 0 ) *
+									self.getSibling('weight').value /
+									self.getval('settings.koh_purity') *
+									self.getval('settings.koh_perc')
+								));
 							}
 						},
 						'percent': {
-							after_input: helper => {
-								helper.calculate('oils.percent');
-								helper.getSibling('weight').calculate();
+							after_input: self => {
+								self.runcalc('oils.percent');
+								self.getSibling('weight').calculate();
 							},
-							on_calculate: helper =>
-								helper.getSibling('weight').value /
-								helper.value('oils.weight'),
-							test_input: helper => {
-								helper.assert(helper.self.getSibling('weight').registry_key, helper.getval('oils.weight') * helper.self.getSibling('percent').value);
-								helper.assert('oils.percent', helper.search('oils.list').sum('percent'));
+							on_calculate: self =>
+								self.getSibling('weight').value /
+								self.getval('oils.weight'),
+							test_input: self => {
+								self.assert(self.getSibling('weight').registry_key, self.getval('oils.weight') * self.getSibling('percent').value);
+								self.assert('oils.percent', self.search('oils.list').sum('percent'));
 							}
 						},
 						'*naoh_needed:weight': {
-							on_calculate: helper =>
-								( helper.getSibling('oil').value.naoh_sap || 0 ) *
-								helper.getSibling('weight').value /
-								helper.value('settings.naoh_purity') *
-								helper.value('settings.naoh_perc'),
-							test_calculate: helper => {
-								helper.assert(helper.self.registry_key, round(
-									( helper.self.getSibling('oil').value.naoh_sap || 0 ) *
-									helper.self.getSibling('weight').value /
-									helper.getval('settings.naoh_purity') *
-									helper.getval('settings.naoh_perc'))
-								)
-							}
+							on_calculate: self =>
+								( self.getSibling('oil').value.naoh_sap || 0 ) *
+								self.getSibling('weight').value /
+								self.getval('settings.naoh_purity') *
+								self.getval('settings.naoh_perc')
 						},
 						'*koh_needed:weight': {
-							on_calculate: helper =>
-								( helper.getSibling('oil').value.koh_sap || 0 ) *
-								helper.getSibling('weight').value /
-								helper.value('settings.koh_purity') *
-								helper.value('settings.koh_perc')
+							on_calculate: self =>
+								( self.getSibling('oil').value.koh_sap || 0 ) *
+								self.getSibling('weight').value /
+								self.getval('settings.koh_purity') *
+								self.getval('settings.koh_perc')
 						}
 					}
 				},
 				'weight:weight': {
-					after_input: helper => helper.calculate('oils.list', 'weight'),
-					on_calculate: helper => helper.sum('oils.list', 'weight'),
-					test_input: helper => {
-						helper.search('oils.list').each((oil, i) => {
-							helper.assert(oil.findkey('weight'), helper.getval('oils.weight') * oil.getval('percent'))
+					after_input: self => self.search('oils.list').array_calc('weight'),
+					on_calculate: self => self.search('oils.list').sum('weight'),
+					test_input: self => {
+						self.search('oils.list').each((oil, i) => {
+							self.assert(oil.findkey('weight'), self.getval('oils.weight') * oil.childval('percent'))
 						});
 					}
 				},
 				'*percent': {
-					on_calculate: helper => helper.sum('oils.list', 'percent')
+					on_calculate: self => self.search('oils.list').sum('percent')
 				},
 				'*naoh_needed:weight': {
-					on_calculate: helper => helper.sum('oils.list', 'naoh_needed')
+					on_calculate: self => self.search('oils.list').sum('naoh_needed')
 				},
 				'*koh_needed:weight': {
-					on_calculate: helper => helper.sum('oils.list', 'koh_needed')
+					on_calculate: self => self.search('oils.list').sum('koh_needed')
 				}
 			}
 		}
 	});
+
+	runTests() {
+		this.calc.runTests(tests);
+	}
 }
