@@ -12,6 +12,7 @@ body {
 .col, #parity {
 	white-space: pre;
 	font-family: monospace;
+	overflow: auto;
 }
 .string {
 	color: #99ff99;
