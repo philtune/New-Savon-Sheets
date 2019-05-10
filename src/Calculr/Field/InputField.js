@@ -1,14 +1,10 @@
-import {getCaller, percround, round, switchcase} from "../../library.js";
+import {round, switchcase} from "../../library.js";
 import {Field} from "./Field.js";
 import {MyDate} from "../Calculr.class.js";
 
 const set = (field, val) => {
-	const inArray = (test, arr) => arr.includes(test);
-	if ( inArray(field.type, ['float']) ) {
+	if ( ['float', 'percent'].includes(field.type) ) {
 		val = round(val);
-	}
-	if ( inArray(field.type, ['percent']) ) {
-		val = percround(val);
 	}
 	field.value = val;
 	field.parent.data[field.name] = val;

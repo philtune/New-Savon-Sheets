@@ -1,9 +1,9 @@
-import {Recipe} from './Recipe/Recipe.class.js';
+import {Recipe} from './Recipe/Recipe.js';
 
 const recipe = window.recipe = new Recipe({
 	log_all: true
 });
-recipe.calc.runTests(search => {
+recipe.runTests(search => {
 	search('made_at').input('1/05/19');
 	search('settings.lye_discount').input(.08);
 	search('settings.cure_days').input(42);
@@ -38,8 +38,7 @@ recipe.calc.runTests(search => {
 });
 
 const recipe2 = window.recipe2 = new Recipe();
-recipe2.load('recipe#dvf'); // oils.weight and oils.percent are configured BEFORE the oils.list -> both are WRONG
-// const recipe2 = window.recipe2 = new Recipe().load('recipe#ls1'); // oils.weight and oils.percent are configured AFTER the oils.list -> both are CORRECT
+recipe2.load('recipe#dvf');
 
 
 // search('settings.cure_days').input(6*7);

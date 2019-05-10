@@ -42,8 +42,6 @@ export class Calculr {
 		after_input: null,
 		before_load: null,
 		after_load: null,
-		before_tests: null,
-		after_tests: null,
 		passed_assertion: null,
 		failed_assertion: null
 	};
@@ -146,13 +144,6 @@ export class Calculr {
 		} else {
 			this.lifecycle_run('failed_assertion', code);
 		}
-	};
-
-	runTests = tests_cb => {
-		this.lifecycle_run('before_tests', this);
-		tests_cb(this.search);
-		this.lifecycle_run('after_tests', this);
-		return this;
 	};
 
 }

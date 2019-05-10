@@ -1,4 +1,4 @@
-const jsonify = window.jsonify = obj => {
+export const jsonify = obj => {
 	let cache = [];
 	let result = JSON.stringify(obj, (key, value) => {
 		const isNonNullObject = () => typeof value === 'object' && value !== null;
@@ -22,6 +22,13 @@ const jsonify = window.jsonify = obj => {
 	return result;
 };
 
+export const colorCode = str => {
+	str = str.replace(/("[^"]*")(\s*?[,\n])/g, '<span class="string">$1</span>$2');
+	str = str.replace(/"([^"]*)":/g, '<span class="key">$1</span>:');
+	str = str.replace(/([-+]?[0-9]*\.?[0-9]+)/g, '<span class="integer">$1</span>');
+	return str;
+};
+
 export const create_uid = (size, compare_arr=[]) => {
 	let uid = '';
 	do {
@@ -30,33 +37,9 @@ export const create_uid = (size, compare_arr=[]) => {
 	return uid;
 };
 
-const colorCode = str => {
-	str = str.replace(/("[^"]*")(\s*?[,\n])/g, '<span class="string">$1</span>$2');
-	str = str.replace(/"([^"]*)":/g, '<span class="key">$1</span>:');
-	str = str.replace(/([-+]?[0-9]*\.?[0-9]+)/g, '<span class="integer">$1</span>');
-	return str;
-};
-
-const insertHTML = (selector, html) => {
-	let elem = document.querySelector(selector);
-	elem.innerHTML = '';
-	elem.insertAdjacentHTML('afterbegin', html);
-};
-
-export const refreshDOM = () => {
-	if ( 'recipe' in window ) {
-		insertHTML('#output1', colorCode(jsonify(recipe.calc.children)));
-		insertHTML('#output2', colorCode(jsonify(recipe.calc.data)));
-	}
-	if ( 'recipe2' in window ) {
-		insertHTML('#output3', colorCode(jsonify(recipe2.calc.data)));
-	}
-};
-
 export const switchcase = (test, cases) => cases.hasOwnProperty(test) ? cases[test] : (cases.hasOwnProperty('') ? cases[''] : null);
 
 export const round = val => ((val, dig) => Math.round(val*(Math.pow(10, dig)))/Math.pow(10, dig))(val, 14);
-export const percround = val => ((val, dig) => Math.round(val*(Math.pow(10, dig)))/Math.pow(10, dig))(val, 14);
 
 export const getCaller = stack => {
 	function getErrorObject(){
