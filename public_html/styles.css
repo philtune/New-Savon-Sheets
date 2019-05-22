@@ -1,0 +1,77 @@
+body {
+	background: #333333;
+	color: #eeeeee;
+	box-sizing: border-box;
+}
+body * {
+	box-sizing: inherit;
+}
+.container {
+	display: flex;
+}
+.col {
+	flex: 1;
+	/*columns: 2;*/
+}
+.col, #parity {
+	overflow: auto;
+}
+code {
+	white-space: pre;
+	font-family: monospace;
+}
+.string {
+	color: #99ff99;
+}
+.integer {
+	color: #ffcd8a;
+}
+.string .integer {
+	color: inherit;
+}
+.key {
+	color: #ffc0c0;
+}
+.array {
+	font-weight: bold;
+	color: #70f6ff;
+}
+
+.field {
+	display: inline-block;
+	width: 64px;
+	width: 100%;
+	height: 32px;
+	position: relative;
+	vertical-align: middle;
+}
+.field > .input,
+.field > .output {
+	height: 100%;
+	padding: 4px 8px;
+	border: 1px solid gray;
+	display: flex;
+	align-items: center;
+	-webkit-appearance: none;
+	border-radius: 3px;
+	overflow: hidden;
+}
+.field > .input {
+	position: relative;
+	z-index: 2;
+	font: inherit;
+	min-width: 100%;
+}
+.field > input.input {
+	width: 100%;
+}
+.field > .output {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1;
+	width: 100%;
+}
+.field > .input:not(:focus) {
+	opacity: 0.1;
+}

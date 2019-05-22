@@ -1,13 +1,17 @@
-import {Field} from "./Field.js";
-import {create_uid, getCaller, round} from "../../library.js";
+import {CalcNode} from "./CalcNode.js";
 import {CollectionItem} from "./Group.js";
 
-function testRemove(self) {
-}
+const create_uid = (size, compare_arr=[]) => {
+	let uid = '';
+	do {
+		uid = (Array(size+1).join("0") + ((Math.random() * Math.pow(36,size)) | 0).toString(36)).slice(-size);
+	} while ( compare_arr.includes(uid) );
+	return uid;
+};
 
 const item_names = [];
 
-export class Collection extends Field {
+export class Collection extends CalcNode {
 
 	type = 'collection';
 	items = [];
@@ -18,7 +22,6 @@ export class Collection extends Field {
 		config.children_configs = config.fields;
 		this.hiddenProperties({
 			after_remove: () => null,
-			test_remove: () => null,
 			children_configs: {}
 		}, config);
 	}
@@ -26,7 +29,7 @@ export class Collection extends Field {
 	getLength = () => this.items.length;
 
 	insert_item = () => {
-		this.root.lifecycle_run('before_insert', this);
+		this.root.lifecycle.get('before_insert')(this);
 
 		const item_data = {};
 
@@ -48,19 +51,19 @@ export class Collection extends Field {
 		this.data.push(item_data);
 		this.num_items++;
 
-		this.root.lifecycle_run('after_insert', item);
+		this.root.lifecycle.get('after_insert')(item);
 		return item;
 	};
 
 	remove_item = item => {
-		this.root.lifecycle_run('before_remove', item);
+		this.root.lifecycle.get('before_remove')(item);
 
 		const index = item.getIndex();
 		delete this.items[index];
 		delete this.parent.data[this.name][index];
-		this.after_remove(item, item.root);
+		this.after_remove(item.getHelper());
 
-		this.root.lifecycle_run('after_remove', item);
+		this.root.lifecycle.get('after_item_remove')(item);
 	};
 
 	unload_item = item => {
@@ -74,7 +77,7 @@ export class Collection extends Field {
 	};
 
 	sum = key =>
-		round(this.items.reduce((a, b) => a + (b.children[key].value || 0), 0));
+		this.items.reduce((a, b) => a + (b.children[key].value || 0), 0);
 
 	calculate_collection = key =>
 		this.items.reduce((a, b) => a + b.children[key].calculate(), 0);

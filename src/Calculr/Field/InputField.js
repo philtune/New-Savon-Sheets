@@ -1,37 +1,13 @@
-import {round, switchcase} from "../../library.js";
-import {Field} from "./Field.js";
-import {MyDate} from "../Calculr.class.js";
+import {CalcNode} from "./CalcNode.js";
+import {Calculr} from "../Calculr.js";
 
-const set = (field, val) => {
-	if ( ['float', 'percent'].includes(field.type) ) {
-		val = round(val);
-	}
-	field.value = val;
-	field.parent.data[field.name] = val;
-};
-
-const registerTags = (field, {tags = []}) => {
-	field.tags = tags;
-	const root_tags = field.root.tags;
-	tags.forEach(tag => {
-		const tagExists = () => tag in root_tags;
-		const notAlreadyTagged = () => !Object.values(root_tags[tag]).find(obj => {
-			return obj === field;
-		});
-		if ( !tagExists() ) {
-			root_tags[tag] = [];
-		}
-		if ( notAlreadyTagged() ) {
-			root_tags[tag].push(field);
-		}
-	});
-};
-
-export class InputField extends Field {
+export class InputField extends CalcNode {
 
 	type = null;
 	value;
 	input_str;
+	input_elem = {};
+	output_elem = {};
 
 	constructor({config, type = 'input', ...options}) {
 		super(options);
@@ -43,12 +19,14 @@ export class InputField extends Field {
 		this.hiddenProperties({
 			get_calculated: () => null,
 			after_input: () => null,
-			test_input: () => null,
 			watchers: [],
 			validate: val => {
+				if ( val === '' ) {
+					val = this.getDefault();
+				}
 				switch ( this.type ) {
 					case 'date':
-						val = new MyDate(MyDate.parse(val));
+						val = new Calculr.Date(Calculr.Date.parse(val));
 						if ( val.toString() === 'Invalid Date' ) {
 							throw new Error('Invalid Date');
 						}
@@ -62,7 +40,6 @@ export class InputField extends Field {
 						} else {
 							val = parseFloat(val);
 						}
-						val = round(val);
 						break;
 				}
 				const hasOptions = () => this.options.length > 0;
@@ -80,44 +57,80 @@ export class InputField extends Field {
 			}
 		}, config);
 
-		set(this,
+		this.getDefault = () =>
 			'default' in config ?
 				config.default :
-				switchcase(this.type, {
-					date: new MyDate(),
-					string: '',
-					'': 0
-				})
-		);
+				(cases =>
+					cases.hasOwnProperty(this.type) ?
+						cases[this.type] :
+						0
+				)({
+					date: new Calculr.Date(),
+					string: ''
+				});
+
+		this.set(this.getDefault());
 	}
 
+	set = val => {
+		this.value = val;
+		this.parent.data[this.name] = val;
+	};
+
+	getHelper = () => ({
+		...this.root.helper,
+		self: this,
+		get_sibling: this.get_sibling,
+		parent: this.parent
+	});
+
 	input = val => {
-		if ( this.read_only ) {
-			return this;
+		if ( !this.read_only ) {
+			this.root.lifecycle.get('before_item_input')(this, this.root.helper, val);
+
+			this.input_str = String(val);
+
+			val = this.validate(val);
+			// TODO: this.getTagMethods().before_input(val);
+			this.set(val);
+			if ( 'value' in this.input_elem ) {
+				this.input_elem.value = this.value;
+			}
+			if ( 'innerText' in this.output_elem ) {
+				this.output_elem.innerText = this.value;
+			}
+			this.calculateWatchers();
+			this.after_input(this.getHelper());
+
+			this.root.lifecycle.get('after_input')(this, val);
+			// TODO: this.getTagMethods().output(val);
 		}
-
-		this.root.lifecycle_run('before_input', this, val);
-
-		this.input_str = String(val);
-
-		val = this.validate(val);
-		// TODO: this.getTagMethods().before_input(val);
-		set(this, val);
-		this.calculateWatchers();
-		this.after_input(this, this.root);
-
-		this.root.lifecycle_run('after_input', this, val);
-		// TODO: this.getTagMethods().output(val);
 		return this;
 	};
 
 	calculate = () => {
-		let result = this.get_calculated(this, this.root);
+		let result = this.get_calculated(this.getHelper());
 		if ( result === null ) {
 			return this.value;
 		}
-		set(this, result);
+		this.set(result);
 		return result;
 	};
-
 }
+
+const registerTags = (field, {tags = []}) => {
+	field.tags = tags;
+	const root_tags = field.root.tags;
+	tags.forEach(tag => {
+		const tagExists = () => tag in root_tags;
+		const notAlreadyTagged = () => !Object.values(root_tags[tag]).find(obj => {
+			return obj === field;
+		});
+		if ( !tagExists() ) {
+			root_tags[tag] = [];
+		}
+		if ( notAlreadyTagged() ) {
+			root_tags[tag].push(field);
+		}
+	});
+};

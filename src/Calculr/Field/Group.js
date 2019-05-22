@@ -1,7 +1,7 @@
-import {Field} from "./Field.js";
+import {CalcNode} from "./CalcNode.js";
 import {buildChildren} from "../buildChildren.js";
 
-export class Group extends Field {
+export class Group extends CalcNode {
 
 	type = 'group';
 

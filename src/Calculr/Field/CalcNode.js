@@ -1,4 +1,4 @@
-export class Field {
+export class CalcNode {
 	constructor(options) {
 		this.name = options.name;
 		this.registry_key = options.registry_key;
@@ -13,6 +13,6 @@ export class Field {
 			siblings: null,
 			data: null
 		}, options);
-		options.root.registry[this.registry_key] = this;
+		options.root.registerNode(this.registry_key, this);
 	}
 }

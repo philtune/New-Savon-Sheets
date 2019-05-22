@@ -1,85 +1,97 @@
-import {Calculr, MyDate} from "../Calculr/Calculr.class.js";
-import {colorCode, create_uid, getCaller, jsonify} from "../library.js";
-import {calculr_config} from "./calculr_config.js";
-
-// TODO: move tests outside Calculr
+import {RecipeCalc} from "./RecipeCalc.js";
 
 export class Recipe {
 
-	log_all;
+	uid;
+	inputs;
+	outputs;
 
-	uid = 'recipe#'+create_uid(3);
+	constructor({log_all=false, getInputs=null, getOutputs=null} = {}) {
+		this.log_all = log_all;
+		if ( getInputs ) {
+			this.set_inputs(getInputs);
+		}
+		if ( getOutputs ) {
+			this.set_outputs(getOutputs);
+		}
 
-	constructor({...config}={}) {
-		this.log_all = config.log_all || false;
-		let
-			insert_start_time,
-			remove_start_time,
-			input_start_time
-		;
-		this.calc = new Calculr(calculr_config)
-			.on('before_insert', calc => {
-				insert_start_time = Date.now();
-			})
-			.on('after_insert', self => {
+		this.uid = 'recipe#' + create_uid(3); //FIXME - needs compare_arr
+		this.calc = new RecipeCalc();
+		this.calc.setLifecycle({
+			after_insert: collection_item => {
 				if ( this.log_all ) {
-					console.warn(`%c ${self.registry_key}.insert_items() @ ${getCaller(6)} `, 'background: #222; color: #bada55');
-					self.root.assert([self.parent.getLength(), self.parent.num_items]);
-					console.warn('%c took ' + ( Date.now() - insert_start_time ) + 'ms ', 'background: #666; color: #fff');
+					console.warn(`%c ${collection_item.parent.registry_key}.insert_items() @ ${getCaller(5)} `, 'background: #222; color: #bada55');
 				}
-			})
-			.on('before_remove', self => {
-				if ( this.log_all ) {
-					remove_start_time = Date.now();
-				}
-			})
-			.on('after_remove', self => {
+			},
+			after_item_remove: self => {
 				if ( this.log_all ) {
 					console.warn(`%c ${self.registry_key}.remove() @ ${getCaller(5)} `, 'background: #222; color: #bada55');
-					self.root.assert(() => self.parent.items.indexOf(self) < 0);
-					self.parent.test_remove(self, self.root);
-					console.warn('%c took ' + ( Date.now() - remove_start_time ) + 'ms ', 'background: #666; color: #fff');
+					self.root.helper.assert(() => self.parent.items.indexOf(self) < 0);
 				}
-			})
-			.on('before_input', (self, val) => {
+			},
+			before_item_input: (self, val) => {
 				if ( this.log_all ) {
-					input_start_time = MyDate.now();
-					console.warn(`%c ${self.registry_key}.input(${val}) @ ${getCaller(4)}`, 'background: #222; color: #bada55');
+					console.warn(`%c ${self.registry_key}.input(${val}) @ ${getCaller(5)}`, 'background: #222; color: #bada55');
 				}
-			})
-			.on('after_input', (self, val) => {
-				if ( this.log_all ) {
-					self.root.assert(self.registry_key, val);
-					self.test_input(self, self.root);
-					console.warn('%c took ' + ( MyDate.now() - input_start_time ) + 'ms ', 'background: #666; color: #fff');
-				}
+			},
+			after_input: (self, val) => {
 				refreshDOM();
-			})
-			.on('before_load', calc => {
-				console.log('Now loading saved recipe');
-			})
-			.on('after_load', calc => {
-				refreshDOM()
-			})
-			.on('passed_assertion', code => {
-				if ( this.log_all ) {
-					console.warn('%c Passed assert() @ ' + getCaller(6) + ' ', 'background: lightgreen; color: black', code);
-				}
-			})
-			.on('failed_assertion', code => {
-				if ( this.log_all ) {
-					console.error('%c Failed assert() @ ' + getCaller(6) + ' ', 'background: red; color: white', code);
-					throw new Error('Testing Error');
-				}
-			})
-		;
-		showRecipes();
+			},
+			after_load: calc => {
+				refreshDOM();
+			}
+		});
 	}
 
 	save = () => {
 		localStorage.setItem(this.uid, this.calc.toJSON());
-		showRecipes();
 		return this;
+	};
+
+	after_load = callback => {
+		domready(e => {
+			callback(this);
+		});
+		return this;
+	};
+
+	set_inputs = getInputs => {
+		domready(e => {
+			this.inputs = getInputs();
+			this.inputs.forEach(input_elem => {
+				const registry_key = input_elem.getAttribute('data-input');
+				const field = this.calc.search(registry_key);
+				field.input_elem = input_elem;
+				input_elem.addEventListener('input', e => {
+					field.input(e.target.value);
+				});
+				if ( field.input_elem.tagName.toLowerCase() === 'select' ) {
+					field.options.forEach(opt_str => {
+						let option = document.createElement('option');
+						option.innerText = opt_str;
+						field.input_elem.appendChild(option);
+					});
+				} else {
+					let value = field.value;
+					if ( field.type === 'date' ) {
+						value = `${value.getMonth() + 1}/${value.getDate()}/${value.getFullYear()}`;
+					}
+					field.input_elem.value = value;
+				}
+			});
+		});
+	};
+
+	set_outputs = getOutputs => {
+		domready(e => {
+			this.outputs = getOutputs();
+			this.outputs.forEach(output_elem => {
+				const registry_key = output_elem.getAttribute('data-output');
+				const field = this.calc.search(registry_key);
+				field.output_elem = output_elem;
+				field.output_elem.innerText = field.value;
+			});
+		});
 	};
 
 	load = uid => {
@@ -88,7 +100,6 @@ export class Recipe {
 		if ( json ) {
 			this.loadJSON(json);
 		}
-		showRecipes();
 		return this;
 	};
 
@@ -97,21 +108,55 @@ export class Recipe {
 		return this;
 	};
 
-	runTests = tests_cb =>  {
-		let test_start_time;
+	runTests = tests_cb => {
 		if ( this.log_all ) {
 			console.group('tests');
-			test_start_time = Date.now();
 		}
-		tests_cb(this.calc.search);
+		tests_cb(this.assert, this.calc.helper);
 		if ( this.log_all ) {
-			console.warn('%c all tests took ' + ( Date.now() - test_start_time ) + 'ms ', 'background: #666; color: #fff');
 			console.groupEnd();
 		}
 		return this;
 	};
 
+	assert = input => {
+		if ( recipe.log_all ) {
+			let code = input;
+			if ( input() ) {
+				console.warn('%c Passed assert() @ ' + getCaller(4) + ' ', 'background: lightgreen; color: black', code);
+			} else {
+				console.error('%c Failed assert() @ ' + getCaller(4) + ' ', 'background: red; color: white', code);
+				throw new Error('Testing Error');
+			}
+		}
+		return this.assert;
+	}
+
 }
+
+const create_uid = (size, compare_arr = []) => {
+	let uid = '';
+	do {
+		uid = ( Array(size + 1).join("0") + ( ( Math.random() * Math.pow(36, size) ) | 0 ).toString(36) ).slice(-size);
+	} while ( compare_arr.includes(uid) );
+	return uid;
+};
+
+const getCaller = stack => {
+	function getErrorObject() {
+		try {
+			throw new Error('')
+		} catch ( err ) {
+			return err;
+		}
+	}
+
+	let err = getErrorObject();
+	let caller_line = err.stack.split("\n")[stack || 4];
+	let index = caller_line.indexOf("at ");
+	let clean = caller_line.slice(index + 2, caller_line.length);
+	return clean.split('/').pop();
+};
 
 const insertHTML = (selector, html) => {
 	let elem = document.querySelector(selector);
@@ -119,7 +164,38 @@ const insertHTML = (selector, html) => {
 	elem.insertAdjacentHTML('afterbegin', html);
 };
 
-const refreshDOM = window.refreshDOM = () => {
+const colorCode = str => {
+	str = str.replace(/("[^"]*")(\s*?[,\n])/g, '<span class="string">$1</span>$2');
+	str = str.replace(/"([^"]*)":/g, '<span class="key">$1</span>:');
+	str = str.replace(/([-+]?[0-9]*\.?[0-9]+)/g, '<span class="integer">$1</span>');
+	return str;
+};
+
+const jsonify = obj => {
+	let cache = [];
+	let result = JSON.stringify(obj, (key, value) => {
+		const isNonNullObject = () => typeof value === 'object' && value !== null;
+		if ( isNonNullObject() ) {
+			if ( cache.includes(value) ) {
+				// Duplicate reference found
+				try {
+					// If this value does not reference a parent it can be deduped
+					return JSON.parse(JSON.stringify(value));
+				} catch ( error ) {
+					// discard key if value cannot be deduped
+					return;
+				}
+			}
+			// Store value in our collection
+			cache.push(value);
+		}
+		return value;
+	}, 4);
+	cache = null;
+	return result;
+};
+
+const refreshDOM = () => {
 	if ( 'recipe' in window ) {
 		insertHTML('#output1', colorCode(jsonify(recipe.calc.children)));
 		insertHTML('#output2', colorCode(jsonify(recipe.calc.data)));
@@ -137,8 +213,12 @@ const showRecipes = () => {
 		let button = document.createElement("button");
 		button.innerHTML = key;
 		btns_div.appendChild(button);
-		button.addEventListener ("click", function() {
+		button.addEventListener("click", function() {
 			alert(val);
 		});
 	});
+};
+
+const domready = callback => {
+	document.addEventListener('DOMContentLoaded', callback);
 };

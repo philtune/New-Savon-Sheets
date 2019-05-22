@@ -1,6 +1,6 @@
-import {Field} from "./Field.js";
+import {CalcNode} from "./CalcNode.js";
 
-export class ForeignField extends Field {
+export class ForeignField extends CalcNode {
 
 	type = 'foreign';
 
